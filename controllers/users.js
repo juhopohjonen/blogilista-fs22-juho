@@ -8,10 +8,23 @@ usersRouter.post('/', async (request, response) => {
 
     if (!username || !name || !password) {
         return response.status(400).json({
-            error: 'invalid user'
+            error: 'invalid user: not enough data'
         })
     }
 
+    if (username.legth < 3 || password.length < 3) {
+        return response.status(400).json({
+            error: 'invalid data: password/username too short'
+        })   
+    }
+
+    const sameUsernameUser = await User.find({ username: username })
+
+    if (sameUsernameUser.length !== 0) {
+        return response.status(400).json({
+            error: 'invalid user: user with username already exists.'
+        })
+    }
 
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)
@@ -21,6 +34,8 @@ usersRouter.post('/', async (request, response) => {
         name,
         passwordHash
     })
+
+    user.populate('blogs')
 
     const savedUser = await user.save()
     response.status(201).json(savedUser)
